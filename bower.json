@@ -10,6 +10,7 @@
         "webcomponents",
         "polymer"
     ],
+    "main": "mqtt-connection.html",
     "license": "MIT",
     "homepage": "https://github.com/sandro-k/mqtt-connection",
     "private": false,
