@@ -1,8 +1,23 @@
 {
-  "name": "core-icon",
-  "private": true,
-  "dependencies": {
-    "core-iconset": "Polymer/core-iconset#>=0.3.0 <1.0.0",
-    "core-icons": "Polymer/core-icons#>=0.3.0 <1.0.0"
-  }
+    "name": "mqtt-connection",
+    "version": "0.0.1",
+    "authors": [
+        "Sandro Kock <sandro.kock@gmail.com>"
+    ],
+    "description": "A mqtt connection via webcomponents",
+    "keywords": [
+        "mqtt",
+        "webcomponents",
+        "polymer"
+    ],
+    "license": "MIT",
+    "homepage": "https://github.com/sandro-k/mqtt-connection",
+    "private": false,
+    "ignore": [
+        "node_modules"
+    ],
+    "dependencies": {
+        "underscore": "~1.6.0",
+        "polymer": "Polymer/polymer#>=0.3.0 <1.0.0"
+    }
 }
