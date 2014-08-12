@@ -1,15 +1,10 @@
-<!--polymer-->
-<!--<script>-->
-<!--Platform = {flags: {debug: true, log: 'bind,ready'}};-->
-<!--</script>-->
-
 <link rel="import" href="../polymer/polymer.html"/>
-<link rel="import" href="../mqtt-subscription/mqtt-subscription.html"/>
+<link rel="import" href="../mqtt-subscription-ui/mqtt-subscription-ui.html"/>
 
 <script src="mows/mows.js"></script>
 <script src="../underscore/underscore.js"></script>
 
-<polymer-element name="mqtt-connection" attributes="" constructor="MqttConnection">
+<polymer-element name="mqtt-connection" constructor="MqttConnection">
 
   <template>
     <div id="container"></div>
@@ -268,7 +263,7 @@
 
           if (!alreadyInDom) {
             // creating the View
-            this.subscriptions[topic] = new MqttSubscription();
+            this.subscriptions[topic] = new MqttSubscriptionUI();
             this.subscriptions[topic].connectionID = this.connectionID;
             this.subscriptions.keys.push(topic);
           }
@@ -297,7 +292,7 @@
 
 
           if (!alreadyInDom) {
-            // adding MqttSubscription to DOM
+            // adding MqttSubscriptionUI to DOM
             if (opt_target !== undefined) {
               this.subscriptions[topic].target = opt_target;
               // if an extra targetID is supplied the view is appended to that
@@ -385,7 +380,7 @@
         },
 
         unsubscribeEvent: function (e, detail, sender) {
-          // we will receive `unsubscribeEvent` from `mqtt-subscription` elements
+          // we will receive `unsubscribeEvent` from `mqtt-subscription-ui` elements
           console.debug("unsubscribeEvent");
           //todo check if connectionID is the same as this ones
           this.unsubscribe(e.detail.topic);

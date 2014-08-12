@@ -1,6 +1,6 @@
 {
     "name": "mqtt-connection",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "authors": [
         "Sandro Kock <sandro.kock@gmail.com>"
     ],
@@ -19,6 +19,7 @@
     ],
     "dependencies": {
         "underscore": "~1.6.0",
-        "polymer": "Polymer/polymer#>=0.3.0 <1.0.0"
+        "polymer": "Polymer/polymer#>=0.3.0 <1.0.0",
+        "mqtt-subscription-ui": "sandro-k/mqtt-subscription-ui#~0.0.2"
     }
 }
