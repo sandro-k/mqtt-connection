@@ -1,5 +1,5 @@
-# Changeover-icon
+# mqtt-connection
 
 ## install
 
-`bower install sandro-k/changeover-icon`
+`bower install sandro-k/mqtt-connection`
