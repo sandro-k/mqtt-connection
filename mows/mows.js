@@ -49,8 +49,6 @@
 
             var params = getParams(port, host, opts);
 
-            // todo(sandro-k) remove the next line after debug
-            console.log(params);
 
             if (params.opts && params.opts.clean === false && !params.opts.clientId) {
                 throw new Error("Missing clientId for unclean clients");
