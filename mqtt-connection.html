@@ -4,7 +4,10 @@ The `mqtt-connection` element creates an MQTT connection via WebSockets
 
 @element mqtt-connection
 @homepage https://github.com/sandro-k/mqtt-connection
+
 -->
+
+
 
 <link rel="import" href="../polymer/polymer.html"/>
 <link rel="import" href="../mqtt-subscription-ui/mqtt-subscription-ui.html"/>
@@ -23,6 +26,13 @@ The `mqtt-connection` element creates an MQTT connection via WebSockets
 <script>
 
 Polymer("mqtt-connection", {
+
+  /**
+   * Fired when a new connection is created
+   *
+   * @event toast
+   * @param {text} the message that should be displayed to the user
+   */
 
   publish: {
     /**
@@ -43,6 +53,7 @@ Polymer("mqtt-connection", {
      * @attribute hostname
      * @type string
      * @default ''
+     * w@required
      *
      */
     hostname: '',
@@ -69,8 +80,10 @@ Polymer("mqtt-connection", {
 
 
     /**
-     *
-     *
+     *  This is just a flag whether or not the password should be hashed
+     *  @attribute passwordHashFunction
+     *  @type boolean
+     *  @default true
      */
     passwordHashFunction: true,
 
@@ -82,9 +95,6 @@ Polymer("mqtt-connection", {
      * @default 1883
      */
     hostPort: 1883,
-
-
-
 
     /**
      * Start a clean session
@@ -232,13 +242,11 @@ Polymer("mqtt-connection", {
     autoConnect: false,
 
     /**
-     * @attribute autoConnect
+     * @attribute useWebsocketConnectionInChrome
      * @type boolean
      * @default false
      */
-    useWebsocketConnection: false,
-
-
+    useWebsocketConnectionInChrome: false,
 
   },
 
@@ -247,7 +255,7 @@ Polymer("mqtt-connection", {
   },
 
   created: function () {
-    console.log("created");
+    // All objects and more importantly arrays need to be initialized on create
     this.messages = {};
     this.subscriptions = {};
     this.subscriptions.keys = [];
@@ -255,9 +263,8 @@ Polymer("mqtt-connection", {
 
   },
   ready: function () {
-    console.log("ready");
+    // just for comfort
     this.content = this.$.container;
-
   },
 
   /**
@@ -269,12 +276,11 @@ Polymer("mqtt-connection", {
    */
   subscribe: function (topic, opt_options, opt_target, opt_callback) {
     console.debug("Subscribing to: \"%s\'", topic);
-
     var alreadyInDom = false;
+
     if (this.subscriptions[topic] !== undefined) {
       console.error("Subscription to %s already exists", topic);
       alreadyInDom = true;
-//            return;
     }
 
     // actually subscribing to the topic
@@ -291,31 +297,24 @@ Polymer("mqtt-connection", {
     var self = this;
     this.subscriptions[topic].addEventListener("unsubscribe", function (e, detail, sender) {
       self.asyncFire('toast', {text: "Removed subscription to "+ e.detail.topic});
-//            console.log(self.unsubscribe);
-      // TODO put real topic into unsubscribe
       self.unsubscribe(e.detail.topic)
     });
 
     this.subscriptions[topic].addEventListener("saveSub", function (e, detail, sender) {
       // TODO(sandro-k) handel event
-      console.log(this);
     });
 
     this.subscriptions[topic].addEventListener("pause", function (e, detail, sender) {
       // TODO(sandro-k) handel event
-      console.log(this);
     });
 
     // setting the view topic
     this.subscriptions[topic].topic = topic;
 
-
     if (!alreadyInDom) {
       // adding MqttSubscriptionUI to DOM
       if (opt_target !== undefined) {
         this.subscriptions[topic].target = opt_target;
-        // if an extra targetID is supplied the view is appended to that
-//            document.getElementById(opt_target).appendChild(this.subscriptions[topic]);
         opt_target.appendChild(this.subscriptions[topic]);
       } else {
         this.subscriptions[topic].target = this.content;
@@ -323,14 +322,15 @@ Polymer("mqtt-connection", {
         this.content.appendChild(this.subscriptions[topic]);
       }
     }
-
-
-    console.log(this.subscriptions[topic]);
   },
 
+  // todo(sandro-k) not sure if this still works pleas check
+  /**
+   * Resubscribe to a paused subscription, where the view is still in the DOM
+   *
+   * @param {string} topic that will be subscribed to
+   */
   reSubscribe: function (topic) {
-    console.debug("Subscribing to: \"%s\'", topic);
-
     var alreadyInDom = false;
     if (this.subscriptions[topic] == undefined) {
       console.error("Can not resubscribe to %s, subscription doesn't exist ", topic);
@@ -340,48 +340,32 @@ Polymer("mqtt-connection", {
     // actually subscribing to the topic
     this.client.subscribe(topic);
 
-
     // start listening to view events
     var self = this;
     this.subscriptions[topic].addEventListener("unsubscribe", function (e, detail, sender) {
       self.asyncFire('toast', {text: "Removed subscription to "+ e.detail.topic});
-//            console.log(self.unsubscribe);
-      // TODO put real topic into unsubscribe
-      console.log("BLUB");
-      self.unsubscribe("presence")
+      self.unsubscribe(e.detail.topic)
     });
 
     this.subscriptions[topic].addEventListener("saveSub", function (e, detail, sender) {
       // TODO(sandro-k) handel event
-      console.log(this);
     });
 
     this.subscriptions[topic].addEventListener("pause", function (e, detail, sender) {
       // TODO(sandro-k) handel event
-      console.log(this);
     });
 
     // setting the view topic
     this.subscriptions[topic].topic = topic;
-
-
-
-
-
-    console.log(this.subscriptions[topic]);
   },
 
   unsubscribe: function (topic) {
-
-    console.log(this);
-
     if (this.subscriptions[topic] !== undefined) {
       // unsubscribe
       this.client.unsubscribe(topic);
 
       // remove from DOM
       this.subscriptions[topic].removeFromDOM();
-//            this.subscriptions[topic].target.removeChild(this.subscriptions[topic]);
 
       // delete reference
       delete this.subscriptions[topic];
@@ -390,11 +374,8 @@ Polymer("mqtt-connection", {
 
       this.subscriptions.keys = _.without(this.subscriptions.keys, topic);
 
-
-
-
     } else {
-//            console.error("Subscription to %s doesn't exists, can't unsubscribe", topic);
+      console.error("Subscription to %s doesn't exists, can't unsubscribe", topic);
     }
   },
 
@@ -407,15 +388,10 @@ Polymer("mqtt-connection", {
   },
 
   mqttPublish: function (topic, message, opt_options, opt_callback) {
-    console.log(message);
     this.client.publish(topic, message, opt_options, opt_callback);
-
   },
 
   onMessage: function (topic, payload, object) {
-//          console.log("onMessage %s: %s", topic, payload);
-    console.log(object);
-
     // add a timestamp to the message as it has none
     object.timestamp = Date.now();
     object.connectionName = this.connectionName;
@@ -428,7 +404,6 @@ Polymer("mqtt-connection", {
       _.each(_.keys(this.subscriptions), function (key) {
         if(key.indexOf('+') > -1){
           var sub = key.substring(0,key.indexOf('+'));
-
 
           if (topic.indexOf(sub) > -1) {
             // need to check if last char is '/' is zero or one and last char is '/'
@@ -460,16 +435,10 @@ Polymer("mqtt-connection", {
   },
 
   messagesChanged: function () {
-//          console.log("Messages: %s", JSON.stringify(this.messages));
   },
 
 
-  domReady: function () {
-//          console.log("domReady");
-    // at this point all attributes of the element
-    // should be loaded and we are save to act on settings
-
-  },
+  domReady: function () {},
 
   end: function () {
     this.client.end();
@@ -486,7 +455,6 @@ Polymer("mqtt-connection", {
   disconnect: function () {
     if (this.client) {
       this.client.end();
-//            console.log(this.client);
     }
   },
 
@@ -500,32 +468,25 @@ Polymer("mqtt-connection", {
 
   },
 
-  logPublishedValues: function() {
-    for (var property in this.publish) {
-      console.log("%s: %s", property, this[property]);
-    }
-
-  },
-
   createClient: function () {
-
-
     var options = { clean: true,
       protocolId: "MQIsdp",
       protocolVersion: 3,
       keepalive: this.keepAlive,
       clientId: this.clientId,
-      will: {
-        topic: this.lastWillTopic,
-        payload: this.lastWillMessage,
-        qos: this.lastWillQoS,
-        retain: this.lastWillRetained
-      },
       encoding: "utf8",
-      clean: this.clean
+      clean: this.cleanSession
     };
 
-    //reconnectPeriod: 1000
+    if (this.lastWillTopic.length > 0
+        && this.lastWillMessage.length > 0){
+
+      options.will = {};
+      options.will.topic = this.lastWillTopic;
+      options.will.payload = this.lastWillMessage;
+      options.will.qos = this.lastWillQoS;
+      options.will.retain =  this.lastWillRetained;
+    }
 
     if (this.username != '' && this.password != '') {
       options.username = this.username;
@@ -534,32 +495,26 @@ Polymer("mqtt-connection", {
 
     this.hostPort = parseInt(this.hostPort);
 
-
-    if (require && typeof require == 'function' && window.chrome.runtime && !this.useWebsocketConnection) {
+    if (require
+        && typeof require == 'function'
+        && window.chrome.runtime.reload
+        && typeof window.chrome.runtime.reload == 'function'
+        && this.useWebsocketConnectionInChrome) {
 
       var net = require('chrome-net');
       var mqtt = require('mqtt');
-
-//            console.log(net);
-//            console.log(mqtt);
 
       var port = this.hostPort;
       var host = this.hostname;
 
       var builder = function() {
-
-//              console.log(port);
-//              console.log(host);
         return net.createConnection(port, host);
       };
 
       this.client = new mqtt.MqttClient(builder, options);
-//            console.log(this.client);
     } else {
       this.client = mows.createClient(this.hostPort, this.hostname, options);
     }
-
-
 
     this.client.on('connect', function(){
       console.log('Client Connected');
@@ -569,20 +524,14 @@ Polymer("mqtt-connection", {
       console.log('Client Error:', e);
     });
 
-
-//          console.log("ConnecteD: %s", this.client.connected)
-
     this.connected = this.client.connected;
-//          console.debug( this.client );
     // pass an optional 'ws://localhost:port' here.
     // save reference to this element to reroute messages
     var self = this;
 
     this.client.on('message', function (topic, message, object) {
-//            console.log(arguments);
       self.onMessage(topic, message, object);
     });
-
   },
 
 
@@ -591,40 +540,29 @@ Polymer("mqtt-connection", {
    */
 
   connectionChanged: function (oldValue, newValue){
-    console.log("Old: %s, new: %s", oldValue, newValue);
     this.connected = newValue;
-
-
 
     if (newValue && (oldValue !== undefined)) {
       this.asyncFire("toast", {text: "Connection established to: "+ this.hostname, status: "ok"});
     } else if (oldValue !== undefined) {
       this.asyncFire("toast", {text: "Connection to: "+ this.hostname + "failed", status: "error"});
     }
-
   },
 
   connectionColorChanged: function() {
     this.connectionColors[0] = this.connectionColor;
-
     for (var i = 1; i< 10; i++) {
-      this.connectionColors[i] = this.shadeColor2(this.connectionColor, 0.10*i);
-//            console.log(0.10*i);
+      this.connectionColors[i] = this.shadeColor(this.connectionColor, 0.10*i);
     }
 
-//          console.log(this.connectionColors);
   },
 
   updateConnection: function(conValues) {
-//          this.connectionColor = conValues.connectionColor;
-    console.log(conValues);
-
     for (var property in this.publish) {
       if (conValues[property]) {
         this[property] = conValues[property];
       }
     }
-
   },
 
   /**
@@ -633,41 +571,11 @@ Polymer("mqtt-connection", {
 
   /**
    * A helper function to lighten or darken colors
-   * from (http://css-tricks.com/snippets/javascript/lighten-darken-color/)
-   * @param col the color without or without the datsh (#)
-   * @param amt how mutch the color should be lightend or darkend [-100, +100]
+   * @param color the color without or without the datsh (#)
+   * @param percent how mutch the color should be lightend or darkend [0.00, 1.00]
    * @returns {string} the color in hex with the dash (#)
    */
-  lightenDarkenColor: function (col, amt) {
-
-    var usePound = true;
-
-    if (col[0] == "#") {
-      col = col.slice(1);
-      usePound = true;
-    }
-
-    var num = parseInt(col,16);
-
-    var r = (num >> 16) + amt;
-
-    if (r > 255) r = 255;
-    else if  (r < 0) r = 0;
-
-    var b = ((num >> 8) & 0x00FF) + amt;
-
-    if (b > 255) b = 255;
-    else if  (b < 0) b = 0;
-
-    var g = (num & 0x0000FF) + amt;
-
-    if (g > 255) g = 255;
-    else if (g < 0) g = 0;
-
-    return (usePound?"#":"") + String("000000" + (g | (b << 8) | (r << 16)).toString(16)).slice(-6);
-  },
-
-  shadeColor2: function (color, percent) {
+  shadeColor: function (color, percent) {
     var f=parseInt(color.slice(1),16),t=percent<0?0:255,p=percent<0?percent*-1:percent,R=f>>16,G=f>>8&0x00FF,B=f&0x0000FF;
     return "#"+(0x1000000+(Math.round((t-R)*p)+R)*0x10000+(Math.round((t-G)*p)+G)*0x100+(Math.round((t-B)*p)+B)).toString(16).slice(1);
   }
