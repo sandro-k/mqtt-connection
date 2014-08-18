@@ -544,6 +544,8 @@ Polymer("mqtt-connection", {
 
     if (newValue && (oldValue !== undefined)) {
       this.asyncFire("toast", {text: "Connection established to: "+ this.hostname, status: "ok"});
+    } else if (!newValue && (oldValue !== undefined)) {
+      this.asyncFire("toast", {text: "Connection lost to: "+ this.hostname, status: "error"});
     } else if (oldValue !== undefined) {
       this.asyncFire("toast", {text: "Connection to: "+ this.hostname + "failed", status: "error"});
     }
