@@ -495,11 +495,15 @@ Polymer("mqtt-connection", {
 
     this.hostPort = parseInt(this.hostPort);
 
+
+    console.log("Type of require %s", typeof require);
+    console.log(this.useWebsocketConnectionInChrome);
+
     if (require
         && typeof require == 'function'
         && window.chrome.runtime.reload
         && typeof window.chrome.runtime.reload == 'function'
-        && this.useWebsocketConnectionInChrome) {
+        && !this.useWebsocketConnectionInChrome) {
 
       var net = require('chrome-net');
       var mqtt = require('mqtt');
