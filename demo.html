@@ -101,9 +101,9 @@
         console.log("sendMessage");
         this.mqttCon.mqttPublish(this.messageTopic, this.messagePayload);
       },
+
       createSubscription: function () {
         this.mqttCon.subscribe(this.subscriptionTopic);
-//          this.mqttCon.subscribe(this.subscriptionTopic, null, this.$.extra);
       },
 
       removeSubscription: function () {
@@ -124,21 +124,13 @@
         this.mqttCon.reconnect();
       },
 
-      createConnection: function () {
-
-      },
-
-
-
       /**
        * ##### WATCHES ####
        */
-
       connectionChanged: function (oldValue, newValue){
-        console.log("Old: %s, new: %s", oldValue, newValue);
-        console.log(arguments);
         this.connected = newValue;
       }
+
     });
   </script>
 </polymer-element>
