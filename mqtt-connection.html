@@ -8,13 +8,12 @@ The `mqtt-connection` element creates an MQTT connection via WebSockets
 -->
 
 
-
 <link rel="import" href="../polymer/polymer.html"/>
 <link rel="import" href="../mqtt-subscription-ui/mqtt-subscription-ui.html"/>
 
 <!--todo(sandro-k) make mows a bower dependency -->
 <script src="mows/mows.js"></script>
-<script src="bundel.js"></script>
+<script src="mqtt-bundel.js"></script>
 <script src="../underscore/underscore.js"></script>
 
 <polymer-element name="mqtt-connection" constructor="MqttConnection">
@@ -275,7 +274,6 @@ Polymer("mqtt-connection", {
    * @param opt_target (optional) the target element the subscription should be appended to
    */
   subscribe: function (topic, opt_options, opt_target, opt_callback) {
-    console.debug("Subscribing to: \"%s\'", topic);
     var alreadyInDom = false;
 
     if (this.subscriptions[topic] !== undefined) {
@@ -381,7 +379,6 @@ Polymer("mqtt-connection", {
 
   unsubscribeEvent: function (e, detail, sender) {
     // we will receive `unsubscribeEvent` from `mqtt-subscription-ui` elements
-    console.debug("unsubscribeEvent");
     //todo check if connectionID is the same as this ones
     this.unsubscribe(e.detail.topic);
 
@@ -418,8 +415,6 @@ Polymer("mqtt-connection", {
             } else if (count == 1 && (substring.slice(-1) == '/' ) ){
               self.subscriptions[key].addMessage(object);
             }
-
-
           }
         } else if (key.indexOf('#') > -1){
           var sub = key.substring(0,key.indexOf('#'));
@@ -434,14 +429,14 @@ Polymer("mqtt-connection", {
     }
   },
 
-  messagesChanged: function () {
-  },
+  messagesChanged: function () {},
 
 
-  domReady: function () {},
-
+  // TODO sandro-k rename end to something more declareativ like disconnectAndStopClient
   end: function () {
-    this.client.end();
+    if (this.client) {
+      this.client.end();
+    }
   },
 
   connect: function () {
@@ -495,10 +490,6 @@ Polymer("mqtt-connection", {
 
     this.hostPort = parseInt(this.hostPort);
 
-
-    console.log("Type of require %s", typeof require);
-    console.log(this.useWebsocketConnectionInChrome);
-
     if (require
         && typeof require == 'function'
         && this.checkForChromeAppRuntime()
@@ -521,11 +512,10 @@ Polymer("mqtt-connection", {
     }
 
     this.client.on('connect', function(){
-      console.log('Client Connected');
     });
 
     this.client.on('error', function(e){
-      console.log('Client Error:', e);
+      console.error('Client Error:', e);
     });
 
     this.connected = this.client.connected;
@@ -545,7 +535,6 @@ Polymer("mqtt-connection", {
       return false;
     }
   },
-
 
   /**
    * ##### WATCHES #####
@@ -593,7 +582,6 @@ Polymer("mqtt-connection", {
     var f=parseInt(color.slice(1),16),t=percent<0?0:255,p=percent<0?percent*-1:percent,R=f>>16,G=f>>8&0x00FF,B=f&0x0000FF;
     return "#"+(0x1000000+(Math.round((t-R)*p)+R)*0x10000+(Math.round((t-G)*p)+G)*0x100+(Math.round((t-B)*p)+B)).toString(16).slice(1);
   }
-
 
 });
 </script>

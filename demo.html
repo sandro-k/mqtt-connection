@@ -3,11 +3,10 @@
 <head lang="en">
   <meta charset="UTF-8">
   <title>mqtt connection demo</title>
-  <script src="../../bower_components/platform/platform.js"></script>
-  <!--<link rel="stylesheet" href="../../bower_components/roboto-fontface/roboto-fontface.css">-->
+  <script src="../../bower_components/webcomponentsjs/webcomponents.js.js"></script>
   <link rel="import" href="../../bower_components/font-roboto/roboto.html">
   <link rel="import" href="../../bower_components/paper-toast/paper-toast.html">
-  <link rel="import" href="../../components/mqtt-connection-ui/mqtt-connection-ui.html">
+  <link rel="import" href="../../bower_components/mqtt-connection-ui/mqtt-connection-ui.html">
   <link rel="import" href="mqtt-connection.html">
   <style>
     body {
@@ -98,7 +97,6 @@
       },
 
       sendMessage: function () {
-        console.log("sendMessage");
         this.mqttCon.mqttPublish(this.messageTopic, this.messagePayload);
       },
 

@@ -42,11 +42,6 @@
         var getParams = _dereq_("./params");
 
         module.exports.createClient = function (port, host, opts) {
-            console.log("Port: %s", port);
-            console.log("Host: %s", host);
-            console.log("Opts: %s", opts);
-
-
             var params = getParams(port, host, opts);
 
 
