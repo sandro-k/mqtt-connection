@@ -20,6 +20,6 @@
   "dependencies": {
     "underscore": "~1.8.2",
     "polymer": "Polymer/polymer#~0.5.5",
-    "mqtt-subscription-ui": "sandro-k/mqtt-subscription-ui#~0.0.3"
+    "mqtt-subscription-ui": "sandro-k/mqtt-subscription-ui#~0.0.4"
   }
 }
