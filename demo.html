@@ -3,7 +3,7 @@
 <head lang="en">
   <meta charset="UTF-8">
   <title>mqtt connection demo</title>
-  <script src="../../bower_components/webcomponentsjs/webcomponents.js.js"></script>
+  <script src="../../bower_components/webcomponentsjs/webcomponents.js"></script>
   <link rel="import" href="../../bower_components/font-roboto/roboto.html">
   <link rel="import" href="../../bower_components/paper-toast/paper-toast.html">
   <link rel="import" href="../../bower_components/mqtt-connection-ui/mqtt-connection-ui.html">
@@ -29,7 +29,7 @@
 
     <h1>Create a connection</h1>
     Broker URL: <input value="{{hostname}}" a>
-    <button on-tap="{{connect}}" >create connection</button>
+    <button on-tap="{{connect}}">create connection</button>
     <button on-tap="{{disconnect}}" disabled?="{{!connected}}">disconnect</button>
     <button on-tap="{{reconnect}}" disabled?="{{connected}}">reconnect</button>
     <span>Connected: {{connected}}</span>
@@ -47,14 +47,13 @@
     <h1>Subscriptions</h1>
 
     <div id="content">
-       <h2>content</h2>
+      <h2>content</h2>
     </div>
     <div id="extra">
       <h2>extra</h2>
     </div>
     <paper-toast id="toast" status="{{toaststatus}}"></paper-toast>
   </template>
-
 
 
   <script>
@@ -72,14 +71,18 @@
 
       ready: function () {
         this.connected = false;
-        this.defaultServer = "ws://test.mosquitto.org:8080/mqtt";
-        this.hostname =  this.defaultServer;
+        this.defaultServer = "ws://127.0.0.1:3000";
+        this.hostname = this.defaultServer;
         this.messagePayload = "Hello World";
         this.messageTopic = "presence";
         this.subscriptionTopic = this.messageTopic;
 
         this.mqttCon = new MqttConnection();
         this.$.content.appendChild(this.mqttCon);
+        this.connect();
+        this.mqttCon.subscribe("aa/+");
+
+        this.mqttCon.mqttPublish("aa", "aa");
 
         this.toast = this.$.toast;
 
@@ -88,9 +91,9 @@
         document.addEventListener("toast", function (e, detail, sender) {
           self.toast.text = e.detail.text;
           if (e.detail.status) {
-            self.toaststatus  = e.detail.status;
+            self.toaststatus = e.detail.status;
           } else {
-            self.toaststatus  = "";
+            self.toaststatus = "";
           }
           self.toast.show();
         });
@@ -125,7 +128,7 @@
       /**
        * ##### WATCHES ####
        */
-      connectionChanged: function (oldValue, newValue){
+      connectionChanged: function (oldValue, newValue) {
         this.connected = newValue;
       }
 
