@@ -11,7 +11,7 @@ The `mqtt-connection` element creates an MQTT connection via WebSockets
 <link rel="import" href="../polymer/polymer.html"/>
 <link rel="import" href="../mqtt-subscription-ui/mqtt-subscription-ui.html"/>
 
-<!--todo(sandro-k) make mows a bower dependency -->
+<!--todo(sandro-k) make mows, mqemitter and mqtt-bundel a bower dependency -->
 <script src="mows/mows.js"></script>
 <script src="mqemitter/browserMqemitter.js"></script>
 <script src="mqtt-bundel.js"></script>
@@ -38,7 +38,6 @@ The `mqtt-connection` element creates an MQTT connection via WebSockets
 
       publish: {
 
-
         /**
          * The URL of the MQTT-Broker the connection is made to.
          * Login credentials can be given inline like `ws://[USER:PASSWORD@]broker.mqttdashboard.com:[PORT]`
@@ -55,6 +54,7 @@ The `mqtt-connection` element creates an MQTT connection via WebSockets
 
         /**
          * The username that is user to authenticate the connection with
+         *
          * @attribute username
          * @type string
          * @default ''
@@ -74,6 +74,7 @@ The `mqtt-connection` element creates an MQTT connection via WebSockets
 
         /**
          *  This is just a flag whether or not the password should be hashed
+         *
          *  @attribute passwordHashFunction
          *  @type boolean
          *  @default true
@@ -83,14 +84,16 @@ The `mqtt-connection` element creates an MQTT connection via WebSockets
 
         /**
          * The port the connection is made with
-         * @attibute hostPort
-         * @type number [1..2^16-1]
+         *
+         * @attribute hostPort
+         * @type integer [1..2^16-1]
          * @default 1883
          */
         hostPort: 1883,
 
         /**
          * Start a clean session
+         *
          * @attribute cleanSession
          * @type boolean
          * @default true
@@ -100,7 +103,8 @@ The `mqtt-connection` element creates an MQTT connection via WebSockets
 
         /**
          * Use SSL for to encrypt the connection
-         * @attrubute useSSL
+         *
+         * @attribute useSSL
          * @type boolean
          * @default false
          */
@@ -109,6 +113,7 @@ The `mqtt-connection` element creates an MQTT connection via WebSockets
 
         /**
          * Seconds that the connection is kept alive in seconds
+         *
          * @attribute keepAlive
          * @type integer
          * @default 120
@@ -117,6 +122,7 @@ The `mqtt-connection` element creates an MQTT connection via WebSockets
 
         /**
          * The topic the last will will be published at
+         *
          * @attribute lastWillTopic
          * @type string
          * @default ''
@@ -125,6 +131,7 @@ The `mqtt-connection` element creates an MQTT connection via WebSockets
 
         /**
          * The last will message that will be published at `lastWillTopic`
+         *
          * @attribute lastWillMessage
          * @type  string
          * @default ''
@@ -172,7 +179,7 @@ The `mqtt-connection` element creates an MQTT connection via WebSockets
         /**
          * A object that holds all `mqtt-subscription` elements each subscription is stored at subscriptions.topic
          * @attribute subscriptions
-         * @type object
+         * @type Object
          * @default {}
          */
         subscriptions: {},
@@ -206,9 +213,9 @@ The `mqtt-connection` element creates an MQTT connection via WebSockets
 
 
         /**
-         * The color shema of this connection
+         * The color schema of this connection
          * @attribute connectionColors
-         * @type array [0..9]
+         * @type Array [0..9]
          * @default []
          */
         connectionColors: [],
@@ -229,20 +236,31 @@ The `mqtt-connection` element creates an MQTT connection via WebSockets
          */
         useWebsocketConnectionInChrome: false,
 
+        /**
+         * The current status of the connection. At default every connection is disconnected.
+         * @attribute connectionStatus
+         * @type string
+         * @default disconnected
+         */
+        connectionStatus: "disconnected"
+
       },
 
       observe: {
         'client.connected': 'connectionChanged'
       },
 
+
+
       created: function () {
         // All objects and more importantly arrays need to be initialized on create
         this.messages = {};
         this.subscriptions = {};
         this.subscriptions.keys = [];
-        this.connectionColors = [];
+        this.connectionColors = [],
         this.emitter = mqemitter();
       },
+
       ready: function () {
         // just for comfort
         this.content = this.$.container;
@@ -254,50 +272,49 @@ The `mqtt-connection` element creates an MQTT connection via WebSockets
        * @param {String} topic the subscription is created on
        * @param {Object} opt_options (optional) additional options that effect the subscription type
        * @param opt_target (optional) the target element the subscription should be appended to
+       * @param opt_callback (optional) a callback that will be run after the subscribing is finished
        */
       subscribe: function (topic, opt_options, opt_target, opt_callback) {
+        console.log("subscribe");
         var alreadyInDom = false;
 
-        if (this.subscriptions[topic] !== undefined) {
-          console.error("Subscription to %s already exists", topic);
+        if(this.subscriptions[topic] !== undefined) {
           alreadyInDom = true;
         }
 
         // actually subscribing to the topic
         this.client.subscribe(topic, opt_options, opt_callback);
 
-        if (!alreadyInDom) {
+        if(!alreadyInDom) {
           // creating the View
           this.subscriptions[topic] = new MqttSubscriptionUI();
           this.subscriptions[topic].connectionID = this.connectionID;
           this.subscriptions.keys.push(topic);
         }
 
-        var messageCallback = function (message, cb) {
-          this.subscription.addMessage(message.message);
-          cb();
+        // if the subscription is already in the DOM we dont need to create an emitter as it has already one
+        if (!alreadyInDom){
+        // the subscription is bound to the callback to that it can be referenced
+          this.emitter.on(topic, function (message, cb) {
+            this.addMessage(message.message);
+            cb();
+          }.bind(this.subscriptions[topic]));
         }
-
-        this.emitter.on(topic, messageCallback.bind({'subscription': this.subscriptions[topic]}));
 
 
         // start listening to view events
-        var unsubscribeCallback = function (e, detail, sender) {
+        // TODO change to mqtt-unsubscribe event
+        this.subscriptions[topic].addEventListener("unsubscribe", function (e, detail, sender) {
           this.asyncFire('toast', {text: "Removed subscription to " + e.detail.topic});
           this.unsubscribe(e.detail.topic)
-        }
-
-        this.subscriptions[topic].addEventListener("unsubscribe", unsubscribeCallback.bind(this));
-
-//    this.subscriptions[topic].addEventListener("saveSub", function (e, detail, sender) {});
-//    this.subscriptions[topic].addEventListener("pause", function (e, detail, sender) {});
+        }.bind(this));
 
         // setting the view topic
         this.subscriptions[topic].topic = topic;
 
-        if (!alreadyInDom) {
+        if(!alreadyInDom) {
           // adding MqttSubscriptionUI to DOM
-          if (opt_target !== undefined) {
+          if(opt_target !== undefined) {
             this.subscriptions[topic].target = opt_target;
             opt_target.appendChild(this.subscriptions[topic]);
           } else {
@@ -308,41 +325,8 @@ The `mqtt-connection` element creates an MQTT connection via WebSockets
         }
       },
 
-      // todo(sandro-k) not sure if this still works pleas check
-      /**
-       * Resubscribe to a paused subscription, where the view is still in the DOM
-       *
-       * @param {string} topic that will be subscribed to
-       */
-      reSubscribe: function (topic) {
-        var alreadyInDom = false;
-        if (this.subscriptions[topic] == undefined) {
-          console.error("Can not resubscribe to %s, subscription doesn't exist ", topic);
-          return;
-        }
-
-        // actually subscribing to the topic
-        this.client.subscribe(topic);
-
-        // start listening to view events
-
-        var unsubscribeCallback = function (e, detail, sender) {
-          this.asyncFire('toast', {text: "Removed subscription to " + e.detail.topic});
-          this.unsubscribe(e.detail.topic)
-        }
-
-        this.subscriptions[topic].addEventListener("unsubscribe", unsubscribeCallback.bind(this));
-
-//    this.subscriptions[topic].addEventListener("saveSub", function (e, detail, sender) {});
-
-//    this.subscriptions[topic].addEventListener("pause", function (e, detail, sender) {});
-
-        // setting the view topic
-        this.subscriptions[topic].topic = topic;
-      },
-
       unsubscribe: function (topic) {
-        if (this.subscriptions[topic] !== undefined) {
+        if(this.subscriptions[topic] !== undefined) {
           // unsubscribe
           this.client.unsubscribe(topic);
 
@@ -355,11 +339,9 @@ The `mqtt-connection` element creates an MQTT connection via WebSockets
           this.subscriptions.keys = _.without(this.subscriptions.keys, topic);
 
           var removeCallback = function (message, done) {
-//            console.log(message);
-//            console.log(done);
-          }
+          };
 
-          this.emitter.removeListener(topic, removeCallback)
+          this.emitter.removeListener(topic, removeCallback);
 
         } else {
           console.error("Subscription to %s doesn't exists, can't unsubscribe", topic);
@@ -378,6 +360,7 @@ The `mqtt-connection` element creates an MQTT connection via WebSockets
       },
 
       onMessage: function (topic, payload, object) {
+        console.log("onMessage", topic)
         // add a timestamp to the message as it has none
         object.timestamp = Date.now();
         object.connectionName = this.connectionName;
@@ -388,21 +371,30 @@ The `mqtt-connection` element creates an MQTT connection via WebSockets
 
       // TODO sandro-k rename end to something more declarative like disconnectAndStopClient
       end: function () {
-        if (this.client) {
+        if(this.client) {
           this.client.end();
         }
       },
 
       connect: function () {
-        if (!this.client) {
-          this.createClient();
+        if(!this.client) {
+          try {
+            this.createClient();
+          } catch (e) {
+            console.log(e);
+          }
         } else {
-          this.client.connect();
+          try {
+            this.connectionStatus = "connecting";
+            this.client.connect();
+          } catch (e) {
+            console.log(e);
+          }
         }
       },
 
       disconnect: function () {
-        if (this.client) {
+        if(this.client) {
           this.client.end();
         }
       },
@@ -410,10 +402,12 @@ The `mqtt-connection` element creates an MQTT connection via WebSockets
       reconnect: function () {
         // need to use a private method to reconnect otherwise we have to recreate the connection
         // TODO change to CONNECT
-        this.client.connect();
-//    this.client._reconnect()
+//        this.client.connect();
+
         _.each(this.subscriptions, function (item) {
-          this.reSubscribe(item.topic);
+          if (item && item.topic){
+            this.subscribe(item.topic);
+          }
         }.bind(this));
 
       },
@@ -429,7 +423,7 @@ The `mqtt-connection` element creates an MQTT connection via WebSockets
           clean: this.cleanSession
         };
 
-        if (this.lastWillTopic.length > 0 && this.lastWillMessage.length > 0) {
+        if(this.lastWillTopic.length > 0 && this.lastWillMessage.length > 0) {
           options.will = {};
           options.will.topic = this.lastWillTopic;
           options.will.payload = this.lastWillMessage;
@@ -437,14 +431,14 @@ The `mqtt-connection` element creates an MQTT connection via WebSockets
           options.will.retain = this.lastWillRetained;
         }
 
-        if (this.username != '' && this.password != '') {
+        if(this.username != '' && this.password != '') {
           options.username = this.username;
           options.password = this.password;
         }
 
         this.hostPort = parseInt(this.hostPort);
 
-        if (require
+        if(require
             && typeof require == 'function'
             && this.checkForChromeAppRuntime()
             && typeof window.chrome.runtime.reload == 'function'
@@ -483,7 +477,7 @@ The `mqtt-connection` element creates an MQTT connection via WebSockets
       },
 
       checkForChromeAppRuntime: function () {
-        if (window && window.chrome && window.chrome.runtime && window.chrome.runtime.reload) {
+        if(window && window.chrome && window.chrome.runtime && window.chrome.runtime.reload) {
           return true;
         } else {
           return false;
@@ -493,48 +487,42 @@ The `mqtt-connection` element creates an MQTT connection via WebSockets
       /**
        * ##### WATCHES #####
        */
-
       connectionChanged: function (oldValue, newValue) {
         this.connected = newValue;
 
-        if (newValue && (oldValue !== undefined)) {
+        this.connectionStatus = this.connectedFilter(newValue);
+
+        if(newValue && (oldValue !== undefined)) {
           this.asyncFire("toast", {text: "Connection established to: " + this.hostname, status: "ok"});
-        } else if (!newValue && (oldValue !== undefined)) {
+        } else if(!newValue && (oldValue !== undefined)) {
           this.asyncFire("toast", {text: "Connection lost to: " + this.hostname, status: "error"});
-        } else if (oldValue !== undefined) {
+        } else if(oldValue !== undefined) {
           this.asyncFire("toast", {text: "Connection to: " + this.hostname + "failed", status: "error"});
         }
       },
 
-      connectionColorChanged: function () {
-        this.connectionColors[0] = this.connectionColor;
-        for (var i = 1; i < 10; i++) {
-          this.connectionColors[i] = this.shadeColor(this.connectionColor, 0.10 * i);
+      /**
+       * FILTER EXPRESSIONS
+       */
+      connectedFilter: function(connected){
+        // TODO REMOVE IF MQTTLENS-CONNECTION-MENU is extracted
+        if(connected) {
+          return "connected";
+        } else {
+          return "disconnected";
         }
-
       },
 
       updateConnection: function (conValues) {
         for (var property in this.publish) {
-          if (conValues[property]) {
+          if(conValues[property]) {
             this[property] = conValues[property];
           }
         }
-      },
-
-      /**
-       * ##### HELPER FUNCTIONS #####
-       */
-
-      /**
-       * A helper function to lighten or darken colors
-       * @param color the color without or without the datsh (#)
-       * @param percent how mutch the color should be lightend or darkend [0.00, 1.00]
-       * @returns {string} the color in hex with the dash (#)
-       */
-      shadeColor: function (color, percent) {
-        var f = parseInt(color.slice(1), 16), t = percent < 0 ? 0 : 255, p = percent < 0 ? percent * -1 : percent, R = f >> 16, G = f >> 8 & 0x00FF, B = f & 0x0000FF;
-        return "#" + (0x1000000 + (Math.round((t - R) * p) + R) * 0x10000 + (Math.round((t - G) * p) + G) * 0x100 + (Math.round((t - B) * p) + B)).toString(16).slice(1);
+        // disconnect and reconnect (connect and subscribe)
+        this.disconnect();
+        this.createClient();
+        this.reconnect();
       }
 
     });
