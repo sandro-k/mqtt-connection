@@ -1,3 +1,7 @@
+# Depricated
+
+Please use https://github.com/mqttjs/mqtt-elements
+
 # mqtt-connection
 
 ## install
