@@ -242,7 +242,10 @@ The `mqtt-connection` element creates an MQTT connection via WebSockets
          * @type string
          * @default disconnected
          */
-        connectionStatus: "disconnected"
+        connectionStatus: "disconnected",
+
+
+        savedSubscriptions: []
 
       },
 
@@ -257,7 +260,9 @@ The `mqtt-connection` element creates an MQTT connection via WebSockets
         this.messages = {};
         this.subscriptions = {};
         this.subscriptions.keys = [];
-        this.connectionColors = [],
+        this.connectionColors = [];
+//        this.savedSubscriptions = [];
+
         this.emitter = mqemitter();
       },
 
@@ -275,7 +280,6 @@ The `mqtt-connection` element creates an MQTT connection via WebSockets
        * @param opt_callback (optional) a callback that will be run after the subscribing is finished
        */
       subscribe: function (topic, opt_options, opt_target, opt_callback) {
-        console.log("subscribe");
         var alreadyInDom = false;
 
         if(this.subscriptions[topic] !== undefined) {
@@ -306,7 +310,8 @@ The `mqtt-connection` element creates an MQTT connection via WebSockets
         // TODO change to mqtt-unsubscribe event
         this.subscriptions[topic].addEventListener("unsubscribe", function (e, detail, sender) {
           this.asyncFire('toast', {text: "Removed subscription to " + e.detail.topic});
-          this.unsubscribe(e.detail.topic)
+          this.unsubscribe(e.detail.topic);
+          this.asyncFire('unsubscribe', e.detail);
         }.bind(this));
 
         // setting the view topic
@@ -360,7 +365,6 @@ The `mqtt-connection` element creates an MQTT connection via WebSockets
       },
 
       onMessage: function (topic, payload, object) {
-        console.log("onMessage", topic)
         // add a timestamp to the message as it has none
         object.timestamp = Date.now();
         object.connectionName = this.connectionName;
@@ -414,7 +418,6 @@ The `mqtt-connection` element creates an MQTT connection via WebSockets
 
       createClient: function () {
         var options = {
-          clean: true,
           protocolId: "MQIsdp",
           protocolVersion: 3,
           keepalive: this.keepAlive,
@@ -447,12 +450,13 @@ The `mqtt-connection` element creates an MQTT connection via WebSockets
           var net = require('chrome-net');
           var mqtt = require('mqtt');
 
-          var port = this.hostPort;
+
           var host = this.hostname;
 
           var builder = function () {
             return net.createConnection(port, host);
           };
+
 
           this.client = new mqtt.MqttClient(builder, options);
         } else {
