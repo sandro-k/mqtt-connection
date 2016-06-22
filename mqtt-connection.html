@@ -449,23 +449,20 @@ The `mqtt-connection` element creates an MQTT connection via WebSockets
 
           var net = require('chrome-net');
           var mqtt = require('mqtt');
-
-
+          
           var host = this.hostname;
+          var port = this.hostPort;
 
           var builder = function () {
             return net.createConnection(port, host);
           };
-
 
           this.client = new mqtt.MqttClient(builder, options);
         } else {
           this.client = mows.createClient(this.hostPort, this.hostname, options);
         }
 
-        this.client.on('connect', function () {
-//          console.log("CONNECT");
-        });
+        this.client.on('connect', function () {});
 
         this.client.on('error', function (e) {
           console.error('Client Error:', e);
