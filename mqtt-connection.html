@@ -294,10 +294,8 @@ The `mqtt-connection` element creates an MQTT connection via WebSockets
           this.subscriptions[topic] = new MqttSubscriptionUI();
           this.subscriptions[topic].connectionID = this.connectionID;
           this.subscriptions.keys.push(topic);
-        }
 
         // if the subscription is already in the DOM we dont need to create an emitter as it has already one
-        if (!alreadyInDom){
         // the subscription is bound to the callback to that it can be referenced
           this.emitter.on(topic, function (message, cb) {
             this.addMessage(message.message);
@@ -416,6 +414,11 @@ The `mqtt-connection` element creates an MQTT connection via WebSockets
 
       },
 
+      reconnectClient: function(){
+        this.createClient();
+        this.reconnect();
+      },
+
       createClient: function () {
         var options = {
           protocolId: "MQIsdp",
@@ -469,12 +472,8 @@ The `mqtt-connection` element creates an MQTT connection via WebSockets
         });
 
         this.connected = this.client.connected;
-        // pass an optional 'ws://localhost:port' here.
-        // save reference to this element to reroute messages
 
-        this.client.on('message', function (topic, message, object) {
-          this.onMessage(topic, message, object);
-        }.bind(this));
+        this.client.on('message', this.onMessage.bind(this))
       },
 
       checkForChromeAppRuntime: function () {
